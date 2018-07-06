@@ -1,1 +1,2 @@
-# maxShvayuk_Embedded_BaseCamp
+# Max Shvayuk Embedded BaseCamp repository
+

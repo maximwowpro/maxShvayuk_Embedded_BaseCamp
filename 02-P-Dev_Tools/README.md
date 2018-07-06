@@ -1,4 +1,5 @@
 # Max Shvayuk Embedded BaseCamp  
+***
 ### **Description to second tasks**  
 I created a program, which can resize the image.  
 To compile it, you should previously install [GraphicsMagick API](http://www.graphicsmagick.org/README.html) to your system.

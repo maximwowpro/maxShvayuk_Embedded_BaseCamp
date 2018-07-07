@@ -1,0 +1,9 @@
+num=25000
+name=sort_Os
+echo $name
+while [[ num > 500001 ]]
+do
+./$name $num
+let "num=num+25000"
+done
+echo "thats all!"

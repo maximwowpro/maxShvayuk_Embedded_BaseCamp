@@ -1,0 +1,14 @@
+#script for resize different size - images to define image (1920*1080 pixels)
+name=resize_image_O2
+echo $name
+for WIDTH in 10 32 71 100 173 224 316 387 548 707 1000 2236 3162 3873 4472 5477 7071 8367 10000 
+do
+echo "size of input image = $[ WIDTH*WIDTH ] ($WIDTH)"
+IN=$[ WIDTH*WIDTH ]_OUT_.jpg
+echo opening\ $IN
+#echo "./$name $IN out_image.jpg 1920 1080"
+./$name $IN out_image.jpg 1920 1080
+echo 
+done
+#rm -f *.jpg
+echo "thats all!"

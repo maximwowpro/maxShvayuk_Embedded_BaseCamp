@@ -1,0 +1,12 @@
+#script for resize define image to different size - images
+name=resize_image_Os
+echo $name
+for WIDTH in 10 32 71 100 173 224 316 387 548 707 1000 2236 3162 3873 4472 5477 7071 8367 10000 
+do
+echo "size of output image = $[ WIDTH*WIDTH ] ($WIDTH)"
+OUT=$[ WIDTH*WIDTH ]_OUT_.jpg
+./$name input_image.jpg $OUT $WIDTH $WIDTH
+echo 
+done
+#rm -f *.jpg
+echo "thats all!"

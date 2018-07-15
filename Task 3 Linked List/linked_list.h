@@ -67,6 +67,12 @@ bool compare_Person_descending(void *first, void *second);//true = need swap
 
 void swap_data(struct List_node *first, struct List_node *second);
 
+struct List_node * extend_2_lists(struct List_node *head1, struct List_node *head2);
+
+struct List_node * slice_list(struct List_node *start, struct List_node *end, void * (*data_copy)(void *, void *) );
+
+void * data_copy_Person(void *from, void *to);
+
 
 #endif
 

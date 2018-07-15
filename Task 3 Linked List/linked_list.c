@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <malloc.h>
 #include "linked_list.h"
 
 
@@ -24,11 +26,7 @@ int add_head_to_list(struct List_node *old_head, struct List_node *new_head) {
 int add_tail_to_list(struct List_node *head, struct List_node *new_tail) {
 	struct List_node *ptr;
 	ptr = head;
-	if(NULL == ptr) {
-		printf("ERROR: can`t allocate memory for \
-		struct List_node *ptr  in function add_tail_to_list()!\n");
-		return 1;
-	}
+
 	while(NULL != ptr->next)
 		ptr = ptr->next;
 
@@ -62,7 +60,9 @@ void print_struct_Person(void *struct_to_print) {
 	if(NULL != (struct Person *)struct_to_print) 
 		printf("struct Person:\nname=%s, age=%i\n",
 			((struct Person *)(struct_to_print))->name,
-			((struct Person *)(struct_to_print))->age);	
+			((struct Person *)(struct_to_print))->age);
+	else
+	printf("\nERROR: print_struct_Person() : struct_to_print == NULL\n");
 	return;
 }
 
@@ -140,8 +140,7 @@ struct List_node * find_list_node(struct List_node *head, void *values_to_find,
 		return tmp_ptr;
 	}
 	
-	while(NULL != ptr) {
-		print_struct_Person(ptr->data);
+	while(NULL != ptr) {		
 		if(NULL != ptr->next) {
 			if( true == 
 			struct_find_equality_func(ptr->next->data, values_to_find) ) {
@@ -240,15 +239,61 @@ void bubble_sort_list(struct List_node *head, bool(*compare_func)(void *, void *
 	return;
 }
 
+struct List_node * extend_2_lists(struct List_node *head1, struct List_node *head2) {
+	add_tail_to_list(head1, head2);
+	return head1;
+}
 
+
+struct List_node * slice_list(struct List_node *start, 
+			      struct List_node *end, 
+			      void * (*data_copy)(void *, void *) ) {
+	struct List_node *new_list_head = malloc(sizeof(struct List_node));
+	if(NULL == new_list_head) {
+		printf("\nERROR: can`t allocate memory for 'new_list_head' in\
+		slice_list() func\n");
+		return NULL;
+	}
+	new_list_head->data = data_copy(start->data, new_list_head->data);	
+
+	struct List_node *ptr = start->next;//iteration over mother list
+	struct List_node *tmp;//iteration over derived list
+	while(ptr != end->next) {
+		tmp = malloc(sizeof(struct List_node));
+		if(NULL == tmp) {
+			printf("\nERROR: can`t allocate memory for 'tmp' in\
+			slice_list() func\n");
+			return NULL;
+		}
+		tmp->data = data_copy(ptr->data, tmp->data);
+
+		add_tail_to_list(new_list_head, tmp);
+		ptr = ptr->next;
+	}
+	return new_list_head;
+}
+
+
+void * data_copy_Person(void *from, void *to) {
+	to = malloc(sizeof(struct Person));
+	if(NULL == to) {
+		printf("\nERROR: can`t allocate memory for 'to' in \
+		data_copy_Person() func\n");
+		return NULL;
+	}
+	memmove(to, from, sizeof(struct Person));
+	return to;
+}
 
 int main(void) 
 {
-	int error_checker = 0;
+	int  error_checker = 0;
 	void (*print_func)(void *) = print_struct_Person;
 	void (*struct_free_func)(void *) = free_person;
-	bool (*compare_ascending)(void*, void *) = compare_Person_ascending;
-	bool (*compare_descending)(void*, void *) = compare_Person_descending;
+	bool (*compare_ascending)(void *, void *) = compare_Person_ascending;
+	bool (*compare_descending)(void *, void *) = compare_Person_descending;
+	void * (*data_copy)(void *, void *) = data_copy_Person;
+	bool (*find_help_func)(void *, void *) = find_equality_func_Person;
 	
 	
 	struct List_node *head = malloc(sizeof(struct List_node));
@@ -292,99 +337,203 @@ int main(void)
 	CREATE_LIST_NODE(nod5, per5, struct Person)
 	CREATE_LIST_NODE(nod6, per6, struct Person)
 
-//	printf(" max adr=%i  new1->data=%i, new1->next=%i\n",(int)new1, (int)new1->data, (int)new1->next);
-//	printf("oleg adr=%i lol2->data=%i, lol2->next=%i\n\n",(int)lol2, (int)lol2->data, (int)lol2->next);
-	
 	error_checker = add_head_to_list(head, nod5);
 	error_checker = add_head_to_list(head, nod4);
 	error_checker = add_head_to_list(head, nod3);
 	error_checker = add_head_to_list(head, nod2);
 	error_checker = add_head_to_list(head, nod1);
-
-//	printf(" max adr=%i  new1->data=%i, new1->next=%i\n",(int)new1, (int)new1->data, (int)new1->next);
-//	printf("oleg adr=%i lol2->data=%i, lol2->next=%i\n\n",(int)lol2, (int)lol2->data, (int)lol2->next);
 	
 	traverse_list(head, print_func);
 
 	printf("\n__________________________________\n");
 	
-	//error_checker = add_tail_to_list(head, nod6);
-	
-	//printf("\n__________________________________\n");
-	
-	//traverse_list(head, print_func);
-	
-	//printf("\n__________________________________\n");
-	
-	//clear_list(head, free_person);
-	
-	//printf("\n__________________________________\n");
-
-	
-// 	struct Person *per7 = malloc(sizeof(struct Person));
-// 	struct List_node *nod7 = malloc(sizeof(struct List_node));
-// 	per7->name = "777";
-// 	per7->age = 7;
-// 	CREATE_LIST_NODE(nod7, per7, struct Person)
-	//printf("\n\npointer_next 777 =%i\n\n", (int)nod6->next);
-
-/*
-	if (true == find_equality_func_Person(nod7->data, per7) )
- 		printf("\nis equal\n");
-	
-	print_struct_Person(head->data);
-	*/
-	//bool(*equal_func_person)(void *, void *) = find_equality_func_Person;
-	
-	//struct List_node *tmp_ptr = find_list_node(head, per3, equal_func_person);
-	
-//	printf("\n__________________________________\n");
-// 	if( NULL != tmp_ptr) {
-// 		printf("\n\nqwerty\n\n");
-// 		print_struct_Person(tmp_ptr->next->data);
-// 	}
-	//insert_node_to_preset_position(tmp_ptr, nod7);
-	
-// 	printf("\n__________________________________\n");
+// 	//error_checker = add_tail_to_list(head, nod6);
 // 	
+// 	//printf("\n__________________________________\n");
+// 	
+// 	//traverse_list(head, print_func);
+// 	
+// 	//printf("\n__________________________________\n");
+// 	
+// 	//clear_list(head, free_person);
+// 	
+// 	//printf("\n__________________________________\n");
+// 
+// 	
+// // 	struct Person *per7 = malloc(sizeof(struct Person));
+// // 	struct List_node *nod7 = malloc(sizeof(struct List_node));
+// // 	per7->name = "777";
+// // 	per7->age = 7;
+// // 	CREATE_LIST_NODE(nod7, per7, struct Person)
+// 	//printf("\n\npointer_next 777 =%i\n\n", (int)nod6->next);
+// 
+// /*
+// 	if (true == find_equality_func_Person(nod7->data, per7) )
+//  		printf("\nis equal\n");
+// 	
+// 	print_struct_Person(head->data);
+// 	*/
+// 	//bool(*equal_func_person)(void *, void *) = find_equality_func_Person;
+// 	
+// 	//struct List_node *tmp_ptr = find_list_node(head, per3, equal_func_person);
+// 	
+// //	printf("\n__________________________________\n");
+// // 	if( NULL != tmp_ptr) {
+// // 		printf("\n\nqwerty\n\n");
+// // 		print_struct_Person(tmp_ptr->next->data);
+// // 	}
+// 	//insert_node_to_preset_position(tmp_ptr, nod7);
+// 	
+// // 	printf("\n__________________________________\n");
+// // 	
+// // 	traverse_list(head, print_func);
+// // 
+// // 	printf("\n__________________________________\n");
+// // 	
+// // 	delete_preset_node(tmp_ptr, struct_free_func);
+// // 	traverse_list(head, print_func);
+// // 		
+// // 	printf("\n__________________________________\n");
+// // 	
+// // 	remove_list_head(head, struct_free_func);
+// // 	traverse_list(head, print_func);
+// // 		
+// // 	printf("\n__________________________________\n");
+// // 	
+// // 	remove_list_tail(head, struct_free_func);
+// // 	traverse_list(head, print_func);
+// // 		
+// // 	printf("\n__________________________________\n");
+// // 	
+// // 	printf("\nlist contains %i nodes\n", count_list_nodes(head) );
+// // 	
+// 	printf("\n\n\n__________________________________\n");
+// 	
+// 	head = reverse_list(head);
 // 	traverse_list(head, print_func);
 // 
 // 	printf("\n__________________________________\n");
-// 	
-// 	delete_preset_node(tmp_ptr, struct_free_func);
+// 
+// 	bubble_sort_list(head, compare_ascending);
 // 	traverse_list(head, print_func);
-// 		
+// 	
 // 	printf("\n__________________________________\n");
 // 	
-// 	remove_list_head(head, struct_free_func);
+// 	
+// 	bubble_sort_list(head, compare_descending);
 // 	traverse_list(head, print_func);
-// 		
+// 	
 // 	printf("\n__________________________________\n");
 // 	
-// 	remove_list_tail(head, struct_free_func);
+// 	
+// 	
+// 	
+// 	
+// 	struct List_node *head2 = malloc(sizeof(struct List_node));
+// 	
+// 	struct Person *per1_1 = malloc(sizeof(struct Person));
+// 	struct List_node *nod1_1 = malloc(sizeof(struct List_node));
+// 	per1_1->name = "1_1";
+// 	per1_1->age = 11;
+// 	
+// 	struct Person *per1_2 = malloc(sizeof(struct Person));
+// 	struct List_node *nod1_2 = malloc(sizeof(struct List_node));
+// 	per1_2->name = "1_2";
+// 	per1_2->age = 12;
+// 	
+// 	struct Person *per1_3 = malloc(sizeof(struct Person));
+// 	struct List_node *nod1_3 = malloc(sizeof(struct List_node));
+// 	per1_3->name = "1_3";
+// 	per1_3->age = 13;
+// 	
+// 	struct Person *per1_4 = malloc(sizeof(struct Person));
+// 	struct List_node *nod1_4 = malloc(sizeof(struct List_node));
+// 	per1_4->name = "1_4";
+// 	per1_4->age = 14;
+// 	
+// 	CREATE_LIST_NODE(nod1_1, per1_1, struct Person)
+// 	CREATE_LIST_NODE(nod1_2, per1_2, struct Person)
+// 	CREATE_LIST_NODE(nod1_3, per1_3, struct Person)
+// 	CREATE_LIST_NODE(nod1_4, per1_4, struct Person)
+// 	
+// 	head2 = nod1_1;
+// 
+// 	error_checker = add_tail_to_list(head2, nod1_2);
+// 	error_checker = add_tail_to_list(head2, nod1_3);
+// 	error_checker = add_tail_to_list(head2, nod1_4);
+// 	
+// 	traverse_list(head2, print_func);
+// 	
+// 	printf("\n__________________________________\n");
+// 
+// 	
+// 	head = extend_2_lists(head, head2);
+// 	
 // 	traverse_list(head, print_func);
-// 		
+// 	
 // 	printf("\n__________________________________\n");
 // 	
-// 	printf("\nlist contains %i nodes\n", count_list_nodes(head) );
-// 	
-	printf("\n\n\n__________________________________\n");
 	
-	head = reverse_list(head);
-	traverse_list(head, print_func);
-
-	printf("\n__________________________________\n");
-
-	bubble_sort_list(head, compare_ascending);
-	traverse_list(head, print_func);
+	printf("\nfind test\n__________________________________\n");
 	
-	printf("\n__________________________________\n");
+	struct List_node *find1 = find_list_node(head, per2, find_help_func);
+	struct List_node *find2 = find_list_node(head, per4, find_help_func);
+	
+	print_struct_Person(find1->next->data);
+	print_struct_Person(find2->next->data);
 	
 	
-	bubble_sort_list(head, compare_descending);
-	traverse_list(head, print_func);
+	
 	
 	printf("\n__________________________________\n");
+	
+	printf("\nSliced list:\n");
+	
+	
+	struct List_node *head_sliced = slice_list(find1->next, find2->next, data_copy);
+	traverse_list(head_sliced, print_func);
+	
+	
+	
+	
+	
+	
+	/*
+	
+	printf("\n__________________________________\n\n\n\n");
+	
+	struct Person *per2_1 = malloc(sizeof(struct Person));
+	struct List_node *nod2_1 = malloc(sizeof(struct List_node));
+	per2_1->name = "test 2_1";
+	per2_1->age = 21;
+	
+	struct Person *per2_2 = malloc(sizeof(struct Person));
+	struct List_node *nod2_2 = malloc(sizeof(struct List_node));
+	per2_2->name = "test 2_2";
+	per2_2->age = 22;
+	
+	CREATE_LIST_NODE(nod2_1, per2_1, struct Person)
+	CREATE_LIST_NODE(nod2_2, per2_2, struct Person)
+	
+	traverse_list(nod2_1, print_func);
+	traverse_list(nod2_2, print_func);
+	
+	nod2_2->data = NULL;
+	
+	traverse_list(nod2_1, print_func);
+	traverse_list(nod2_2, print_func);
+	
+	//nod2_2->data = malloc(sizeof(struct Person));
+	//*((struct Person *)(nod2_2->data)) = *((struct Person *)(nod2_1->data));
+	//memcpy(nod2_2->data, nod2_1->data, sizeof(struct Person) );
+	nod2_2->data = data_copy_Person(nod2_1->data, nod2_2->data);
+	printf("\n\t\tsizeof(*nod2_2->data) = %i\n", malloc_usable_size(nod2_2->data) );
+	
+	traverse_list(nod2_1, print_func);
+	traverse_list(nod2_2, print_func);
+	*/
+	
+	printf("\n__________________________________\n\n\n\n");
 	return 0;
 }
 

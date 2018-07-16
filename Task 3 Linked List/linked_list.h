@@ -1,13 +1,12 @@
-#ifndef LINKED_LIST_H
-#define LINKED_LIST_H
-
-#include <stdbool.h>
-
 /*
  * Writed by Max Shvayuk.
  * 13.07.2018
  */
 
+#ifndef LINKED_LIST_H
+#define LINKED_LIST_H
+
+#include <stdbool.h>
 
 
 /**
@@ -71,7 +70,8 @@ struct Person {
  * 	      after this function`s work.
  * 
  * Return: 0 - OK
- * 	   1 - can`t allocate memory
+ * 	  -1 - @old_head or @new_head == NULL
+ * 	  -2 - can`t allocate memory for "tmp" pointer
  */
 int add_head_to_list(struct List_node *old_head, struct List_node *new_head);
 
@@ -87,8 +87,9 @@ int add_head_to_list(struct List_node *old_head, struct List_node *new_head);
  * This new tail "next" field will point to NULL.
  * 
  * Return: 0 - OK
+ * 	  -1 - @head or @new_tail == NULL
  */
-void add_tail_to_list(struct List_node *head, struct List_node *new_tail);
+int add_tail_to_list(struct List_node *head, struct List_node *new_tail);
 
 
 
@@ -102,8 +103,11 @@ void add_tail_to_list(struct List_node *head, struct List_node *new_tail);
  * Remove a head of linked list.
  * A second node of this linked list becomes a new head.
  * Free memory, which was allocated for data in first node.
+ * 
+ * Return: 0 - OK
+ * 	  -1 - @head or @struct_free_func == NULL
  */
-void remove_list_head(struct List_node *head, void(*struct_free_func)(void *));
+int remove_list_head(struct List_node *head, int(*struct_free_func)(void *));
 
 
 
@@ -113,8 +117,11 @@ void remove_list_head(struct List_node *head, void(*struct_free_func)(void *));
  * @struct_free_func: ptr to the function, which correctly 
  * 		      frees memory in list_tail->data struct.
  * 		      For example, free_person() function.
+ * 
+ * Return: 0 - OK
+ * 	  -1 - @head or @struct_free_func == NULL
  */
-void remove_list_tail(struct List_node *head, void(*struct_free_func)(void *));
+int remove_list_tail(struct List_node *head, int(*struct_free_func)(void *));
 
 
 /**
@@ -122,8 +129,11 @@ void remove_list_tail(struct List_node *head, void(*struct_free_func)(void *));
  * @struct_to_free: ptr to the struct Person, which should be deleted.
  * 
  * Set all fields of @struct_to_free to zeros.
+ * 
+ * Return: 0 - OK
+ * 	  -1 - @struct_to_free == NULL
  */
-void free_person(void *struct_to_free);
+int free_person(void *struct_to_free);
 
 
 
@@ -133,8 +143,10 @@ void free_person(void *struct_to_free);
  * @print_struct: ptr to the function, which correctly 
   	          print all fields of list_node->data.
  * 		  For example, print_struct_Person() function.
+ * Return: 0 - OK
+ * 	  -1 - @list_head or @print_struct == NULL
  */
-void traverse_list(struct List_node *list_head, void (*print_struct)(void*) );
+int traverse_list(struct List_node *list_head, void (*print_struct)(void*) );
 
 
 
@@ -173,10 +185,10 @@ int count_list_nodes(struct List_node *list_head);
  * If @list_head == NULL, prints error message.
  * 
  * Return:
- * * -1 - error code. Notify that @list_head == NULL.
+ * * -1 - error code. Notify that @list_head or @struct_free_func == NULL.
  * *  0 - OK.
  */
-int clear_list(struct List_node *list_head, void(*struct_free_func)(void *) );
+int clear_list(struct List_node **list_head, int(*struct_free_func)(void *) );
 
 
 
@@ -270,7 +282,7 @@ int insert_node_to_preset_position
  * * -1 - error code. Notify that @prev_node or @struct_free_func == NULL.
  * *  0 - OK.
  */
-int delete_preset_node(struct List_node *prev_node, void(*struct_free_func)(void *));
+int delete_preset_node(struct List_node *prev_node, int(*struct_free_func)(void *));
 
 
 
@@ -434,18 +446,3 @@ void * data_copy_Person(void *from, void *to);
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

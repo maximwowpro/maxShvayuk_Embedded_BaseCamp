@@ -1,6 +1,4 @@
-/* Header is in /usr/avr/include. For more, see http://bit.ly/avrgcc-headers */
 #include <avr/io.h>
-/* #include <avr/iom328p.h> -- *bad* non-portable alternative                */
 #include <stdint.h>
 
 /* this variable changes the speed of LED`s flashing */
@@ -9,13 +7,6 @@ const uint16_t speed = 7;
 /**
  * soft_delay() - wastes CPU time crunching cycle to achieve delay
  * @N:	number of outer "while" steps.
- *
- * This is very inefficient in terms of CPU and energy usage.
- * Better way is to use timer to count time and put CPU into sleep mode to save
- * energy.
- * But soft delays are useful for very precise timings (i.e. software USB
- * implementation, 1-Wire interface, etc.)
- * See <util/delay.h> for alternative implementation
  */
 static void soft_delay(volatile uint16_t N)
 {

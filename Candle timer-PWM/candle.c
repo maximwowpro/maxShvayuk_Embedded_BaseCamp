@@ -14,11 +14,10 @@ const uint16_t delay_ms = 20;
 void sleep_ms(uint16_t ms_val)
 {
 	/* Set Power-Save sleep mode */
-	/* https://www.nongnu.org/avr-libc/user-manual/group__avr__sleep.html */
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 	cli();		/* Disable interrupts -- as memory barrier */
 	sleep_enable();	/* Set SE (sleep enable bit) */
-	sei();  	/* Enable interrupts. We want to wake up, don't we? */
+	sei();  	/* Enable interrupts.*/
 	TIMSK2 |= (1 << TOIE2); /* Enable Timer2 Overflow interrupt by mask */
 	while (ms_val--) {
 		/* Count 1 ms from TCNT2 to 0xFF (up direction) */
@@ -28,9 +27,6 @@ void sleep_ms(uint16_t ms_val)
 		TCCR2B =  (1 << CS22) | (1 << CS20); /* f = Fclk_io / 128, start timer */
 
 		sleep_cpu();	/* Put MCU to sleep */
-
-		/* This is executed after wakeup */
-
 	}
 	sleep_disable();	/* Disable sleeps for safety */		
 }

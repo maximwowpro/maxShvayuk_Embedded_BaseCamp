@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 static const uint8_t stddelay = 1;
-static const uint16_t sym_delay = 1;	/* 500 / Hz */
+static const uint16_t sym_delay = 10;	/* 500 / Hz */
 
 const uint8_t segm_sym_table[] = {
 	/* Common cathode here */
@@ -37,7 +37,6 @@ void segm_init(struct segm_Display *display)//
 		&display->DS,
 	};
 
-	//настраиваем нужные пины как OUTPUT и подаем на их выход 0
 	for (uint8_t i = 0; i < (uint8_t)(sizeof ptrarr / sizeof *ptrarr); i++) {
 		*(ptrarr[i]->port->PORT) &= ~(1 << ptrarr[i]->pin);
 		*(ptrarr[i]->port->DDR) |= 1 << ptrarr[i]->pin;
@@ -52,15 +51,12 @@ void segm_shiftbyte(struct segm_Display *display, uint8_t byte)
 		bit = byte >> 7;
 		byte = byte << 1;
 		/* Set DS pin to bit	*/
-		if (bit)//если бит == 1
+		if (bit)
 			*(display->DS.port->PORT) |= 1 << display->DS.pin;
-		//зажигаем соответствующий пин
 		else
 			*(display->DS.port->PORT) &= ~(1 << display->DS.pin);
-		//тушим соответствующий пин
-		
-		/* Drive low-to-high posedge on SHCP pin, делаем сдвиг */
-		*(display->SHCP.port->PORT) &= ~(1 << display->SHCP.pin);//установили пин в 0
+
+		*(display->SHCP.port->PORT) &= ~(1 << display->SHCP.pin);
 		(*display->delay_func)(stddelay);  /* Call delay with 1 step */
 		*(display->SHCP.port->PORT) |= 1 << display->SHCP.pin;
 		(*display->delay_func)(stddelay);
@@ -71,9 +67,9 @@ void segm_shiftbyte(struct segm_Display *display, uint8_t byte)
 void segm_latch(struct segm_Display *display)
 {
 	/* Drive low-to-high posedge on STCP pin */
-	*(display->STCP.port->PORT) &= ~(1 << display->STCP.pin);//сброс бита-защелки
+	*(display->STCP.port->PORT) &= ~(1 << display->STCP.pin);
 	(*display->delay_func)(stddelay);  /* Call delay with 1 step */
-	*(display->STCP.port->PORT) |= 1 << display->STCP.pin;//установка бита-защелки
+	*(display->STCP.port->PORT) |= 1 << display->STCP.pin;
 	(*display->delay_func)(stddelay);
 
 }

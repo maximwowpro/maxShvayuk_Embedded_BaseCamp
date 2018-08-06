@@ -1,3 +1,10 @@
+/*
+ * Author of segm.h and segm.c: https://github.com/thodnev
+ * This file is HAL (hardware abstraction layer) for
+ * 4-Bit LED Digital Tube Module, manufactured by QUIFEI, 
+ * based on 2 74HC595 shift registers.
+ */
+
 #include "clock.h"
 
 #include <stdint.h>
@@ -31,11 +38,9 @@ void segm_bcd(uint16_t number, uint8_t *res);
 
 /**
  * GPIO abstraction layer
- * почему они волатайл:
  * For more: http://www.nongnu.org/avr-libc/user-manual/FAQ.html#faq_port_pass
  */
-struct segm_Port {//самый низкий уровень
-		  //тут представлены ссылки на порт (PB, PC, PD)
+struct segm_Port {
 	volatile uint8_t *DDR;	/* addr of GPIO DDRx direction register, IN or OUT */
 	volatile uint8_t *PIN;	/* addr of GPIO PINx input register, read IN logic level*/
 	volatile uint8_t *PORT;	/* addr of GPIO PORTx data register, set OUT state */
@@ -43,10 +48,10 @@ struct segm_Port {//самый низкий уровень
 
 struct segm_Pin {
 	struct segm_Port *port;	/* GPIO port */
-	uint8_t pin;		/* number of pin in GPIO port, номер конкретного пина в порте(от 0 до 6) */
+	uint8_t pin;		
 };
 
-struct segm_Display {//высокий уровень
+struct segm_Display {
 	struct segm_Pin SHCP;	/* 74HC595: SHCP pin location, Shift */
 	struct segm_Pin STCP;	/* 74HC595: STCP pin location, Latch */
 	struct segm_Pin DS;	/* 74HC595: DS pin location, Data signal */

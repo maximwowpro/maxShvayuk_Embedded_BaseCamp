@@ -32,45 +32,56 @@ void uart_put(char *str);
 
 bool atomic_str_eq(char *str1, char *str2);
 
-char* to_string_uint8_dec(uint8_t arg, char* str);
+/* uart_compare_with_rdbuff: compare @str with rdbuff(watch print_uart.h).
+ * This is front-end to atomic_str_eq() function.
+ * 
+ * Return:
+ * true  - str == rdbuff
+ * false - str != rdbuff
+ */
+bool uart_compare_with_rdbuff(char *str);
 
-char* to_string_uint16_dec(uint16_t arg, char* str);
+/*
+ * Next 3 functions converts separate number  to char* string (in dec or hex).
+ */
+char* to_string_uint8_dec(uint8_t arg, char* str);
 
 char* to_string_uint8_hex(uint8_t arg, char* str);
 
-char* to_string_uint16_hex(uint16_t arg, char* str);
+char* to_string_uint16_dec(uint16_t arg, char* str);
 
 
+/*
+ * Next 4 functions are convenient front-end to uart_put()
+ * and previously to_string functions.
+ */
 inline void uart_print_str(char *str) 
 {
 	uart_put(str);
 }
 
-inline void uart_print_uint8_dec(uint8_t arg, char* str)
+inline void uart_print_uint8_dec(uint8_t arg)
 {
+	char *str = NULL;
 	uart_put(to_string_uint8_dec(arg, str));
 }
 
-inline void uart_print_uint16_dec(uint16_t arg, char* str)
+inline void uart_print_uint8_hex(uint8_t arg)
 {
+	char *str = NULL;
+	uart_put(to_string_uint8_hex(arg, str));
+}
+
+inline void uart_print_uint16_dec(uint16_t arg)
+{
+	char *str = NULL;
 	uart_put(to_string_uint16_dec(arg, str));
 }
 
 
+/* Next 2 functions prints unique 1-Wire id and CRC (in dec and hex) */
 void uart_print_1wire_id_dec(uint8_t *id);
 
 void uart_print_1wire_id_hex(uint8_t *id);
-
-
-inline void uart_print_uint8_hex(uint8_t arg, char* str)
-{
-	uart_put(to_string_uint8_hex(arg, str));
-}
-
-inline void uart_print_uint16_hex(uint16_t arg, char* str)
-{
-	uart_put(to_string_uint16_hex(arg, str));
-}
-
 
 #endif

@@ -58,33 +58,3 @@ void led_RGB_blue(led_RGB *led)
 	*(led->PORT) |=  (1 << led->pin_blue);
 	*(led->PORT) &= ~(1 << led->pin_red) & ~(1 << led->pin_green);
 }
-
-// /*
-//  * delay using timer 0.
-//  * "delay" max value is 16 ms
-//  */
-// void pwm_timer0_A(uint8_t delay)
-// {
-// 	if(delay > 16)
-// 		delay = 16;
-// 	
-// 	
-// 	DDRD |= (1 << PD6);
-// 	
-// 	sei(); /* enable interrupts */
-// 	/* how we got 15:
-// 	 * F_CPU = 16000000 Hz
-// 	 * timer's prescaler = 1024
-// 	 * timer's compare register OCR0A max value = 255
-// 	 * so:  16000000 / 1024 = 15625 ticks of timer0 per second.
-// 	 * 1 tick's duration is: 1 / 15625 = 0.000064 s = 0.064 ms
-// 	 * 1 / 0.064 = 15.625 ≈ 15
-// 	 */
-// 	OCR0A = delay * 15;
-// 	TCCR0A |= (1 << WGM01) | (1 << WGM00);/* set work mode as PWM	     */
-// 	TCCR0A |= (1 << COM0A0);	      
-// 	TCCR0B |= (1 << CS02) | (1 << CS00); /* set prescaler as 1024       */
-// 	TCCR0B |= (1 << WGM02);
-// 	TIMSK0 |= (1 << OCIE0A); 	      /* allow interrupts for timer0 */	
-// }*/
-

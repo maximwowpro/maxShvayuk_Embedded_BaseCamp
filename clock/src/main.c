@@ -32,7 +32,7 @@ ISR(TIMER1_COMPA_vect, ISR_BLOCK)
  * Jther words, we use this variable to allow PCINT trigger not when we 
  * turn on and turn off button, but just when we push button down.
  */
-bool mod = true; 
+volatile bool mod = true; 
 
 ISR(PCINT2_vect, ISR_BLOCK)
 {

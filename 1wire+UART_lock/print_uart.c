@@ -94,9 +94,31 @@ bool atomic_str_eq(char *str1, char *str2)
 	return res;
 }
 
+
+// /* uart_compare_with_rdbuff: compare @str with rdbuff(watch print_uart.h).
+//  * This is front-end to atomic_str_eq() function.
+//  * 
+//  * Return:
+//  * true  - str == rdbuff
+//  * false - str != rdbuff
+//  */
+// bool uart_compare_with_rdbuff(char *str)
+// {
+// 	return atomic_str_eq(rdbuff, str);
+// }
+
+
+/*
+ * Next 3 functions converts separate number  to char* string.
+ */
 char* to_string_uint8_dec(uint8_t arg, char* str)
 {
+	if( NULL != str)
+		free(str);
+	
 	str = malloc(3 * sizeof(char) + 1); /* 3 numbers + \0 sumbol */
+	if( NULL == str )
+		return NULL;
 	
 	uint8_t tmp = arg;
 	uint8_t pos = 0; /* number of symbols in str */
@@ -130,10 +152,45 @@ char* to_string_uint8_dec(uint8_t arg, char* str)
 	return str;
 }
 
+char* to_string_uint8_hex(uint8_t arg, char* str)
+{
+	if( NULL != str)
+		free(str);
+	
+	str = malloc(2 * sizeof(char) + 1); /* 2 numbers + \0 sumbol */
+	if( NULL == str )
+		return NULL;
+	
+	char numbers[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+			       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+	uint8_t tmp = arg;
+	uint8_t pos = 0; /* number of symbols in str */
+	if( arg >= 16 ) {
+		tmp /= 16;
+		str[pos] = numbers[tmp];
+		arg %= 16;
+		pos++;
+	}
+	else {
+		str[pos] = '0';
+		pos++;
+	}
+
+	str[pos] = numbers[arg];
+	pos++;
+	
+	str[pos] = '\0';
+	return str;
+}
 
 char* to_string_uint16_dec(uint16_t arg, char* str)
 {
+	if( NULL != str)
+		free(str);
+	
 	str = malloc(5 * sizeof(char) + 10); /* 5 numbers + \0 sumbol */
+	if( NULL == str )
+		return NULL;
 	
 	uint16_t tmp = arg;
 	uint8_t pos = 0; /* number of symbols in str */
@@ -192,75 +249,49 @@ char* to_string_uint16_dec(uint16_t arg, char* str)
 }
 
 
-
-char* to_string_uint8_hex(uint8_t arg, char* str)
-{
-	str = malloc(2 * sizeof(char) + 1); /* 2 numbers + \0 sumbol */
-	
-	char numbers[] = {'0', '1', '2', '3', '4', '5', '6', '7',
-			       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-	uint8_t tmp = arg;
-	uint8_t pos = 0; /* number of symbols in str */
-	if( arg >= 16 ) {
-		tmp /= 16;
-		str[pos] = numbers[tmp];
-		arg %= 16;
-		pos++;
-	}
-	else {
-		str[pos] = '0';
-		pos++;
-	}
-
-	str[pos] = numbers[arg];
-	pos++;
-	
-	str[pos] = '\0';
-	return str;
-}
-
-char* to_string_uint16_hex(uint16_t arg, char* str)
-{
-	
-}
-
-
+/*
+ * Next 4 functions are convenient front-end to uart_put()
+ * and previously to_string functions.
+ */
 extern void uart_print_str(char *str);
 
-extern void uart_print_uint8_dec(uint8_t arg, char* str);
+extern void uart_print_uint8_dec(uint8_t arg);
+extern void uart_print_uint8_hex(uint8_t arg);
 
-extern void uart_print_uint16_dec(uint16_t arg, char* str);
+extern void uart_print_uint16_dec(uint16_t arg);
 
+
+/* Next 2 functions prints unique 1-Wire id and CRC */
 void uart_print_1wire_id_dec(uint8_t *id)
 {
-	char *str = NULL;
-	uart_print_str("\nFamily = ");
-	uart_print_uint8_dec(id[0], str);
+	if( NULL == id )
+		return;
 	
-	uart_print_str("  id = ");
+	uart_print_str("FamilyID = ");
+	uart_print_uint8_dec(id[0]);
+	
+	uart_print_str("  uniqueID = ");
 	for(uint8_t i = 1; i < 7; i++)
-		uart_print_uint8_dec(id[i], str);
+		uart_print_uint8_dec(id[i]);
 	
 	uart_print_str("  CRC = ");
-	uart_print_uint8_dec(id[7], str);
+	uart_print_uint8_dec(id[7]);
 }
-
-extern void uart_print_uint8_hex(uint8_t arg, char* str);
-
-extern void uart_print_uint16_hex(uint16_t arg, char* str);
 
 void uart_print_1wire_id_hex(uint8_t *id)
 {
-	char *str = NULL;
-	uart_print_str("Family = ");
-	uart_print_uint8_hex(id[0], str);
+	if( NULL == id )
+		return;
 	
-	uart_print_str("  id = ");
+	uart_print_str("FamilyID = ");
+	uart_print_uint8_hex(id[0]);
+	
+	uart_print_str("  uniqueID = ");
 	for(uint8_t i = 1; i < 7; i++)
-		uart_print_uint8_hex(id[i], str);
+		uart_print_uint8_hex(id[i]);
 	
 	uart_print_str("  CRC = ");
-	uart_print_uint8_hex(id[7], str);
+	uart_print_uint8_hex(id[7]);
 }
 
 

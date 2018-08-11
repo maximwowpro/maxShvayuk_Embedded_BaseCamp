@@ -35,7 +35,7 @@ void led_RGB_red(led_RGB *led)
 	led->green = 0x00;
 	led->blue  = 0x00;
 	
-	*(led->PORT) |=  (1 << led->pin_red);
+	*(led->PORT) |=  (1 << led->pin_red); /* turn on red */
 	*(led->PORT) &= ~(1 << led->pin_green) & ~(1 << led->pin_blue);
 }
 

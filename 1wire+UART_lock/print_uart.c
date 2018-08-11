@@ -9,6 +9,31 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+/* Read and write buffers */
+uint8_t	rdbuff[BUFFER_LEN] = {'\0'},
+		wrbuff[BUFFER_LEN] = {'\0'};
+volatile bool txcflag = true;
+volatile bool rxcflag = false;
+
+
+/* USART RX Complete interrupt handler */
+ISR(USART_RX_vect, ISR_BLOCK)
+{	
+	/* Buffer will contain the last N = <buffer_len> chars read */
+	rdbuff[rdind] = UDR0;
+
+	if ('\n' == rdbuff[rdind]) {
+		rdbuff[rdind] = '\0';
+		rxcflag = true;
+		rdind = 0;
+	} else {
+		rxcflag = false;
+		rdind++;
+	}
+
+	if (rdind >= BUFFER_LEN)
+		rdind = 0;
+}
 
 /* USART Data Register Empty interrupt handler */
 ISR(USART_UDRE_vect, ISR_BLOCK)
@@ -95,17 +120,17 @@ bool atomic_str_eq(char *str1, char *str2)
 }
 
 
-// /* uart_compare_with_rdbuff: compare @str with rdbuff(watch print_uart.h).
-//  * This is front-end to atomic_str_eq() function.
-//  * 
-//  * Return:
-//  * true  - str == rdbuff
-//  * false - str != rdbuff
-//  */
-// bool uart_compare_with_rdbuff(char *str)
-// {
-// 	return atomic_str_eq(rdbuff, str);
-// }
+/* uart_compare_with_rdbuff: compare @str with rdbuff(watch print_uart.h).
+ * This is front-end to atomic_str_eq() function.
+ * 
+ * Return:
+ * true  - str == rdbuff
+ * false - str != rdbuff
+ */
+bool uart_compare_with_rdbuff(char *str)
+{
+	return atomic_str_eq(rdbuff, str);
+}
 
 
 /*
@@ -162,7 +187,7 @@ char* to_string_uint8_hex(uint8_t arg, char* str)
 		return NULL;
 	
 	char numbers[] = {'0', '1', '2', '3', '4', '5', '6', '7',
-			       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+			  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 	uint8_t tmp = arg;
 	uint8_t pos = 0; /* number of symbols in str */
 	if( arg >= 16 ) {
@@ -251,9 +276,81 @@ char* to_string_uint16_dec(uint16_t arg, char* str)
 
 /*
  * Next 4 functions are convenient front-end to uart_put()
- * and previously to_string functions.
+ * and previously to_string() functions.
  */
-extern void uart_print_str(char *str);
+
+/* uart_print_str() - front-end to uart_put() function
+ * The main feature is next:
+ * due to size of wrbuff[BUFFER_LEN], where BUFFER_LEN == 64 symbols
+ * the max lenght of string, which is an argument of uart_put() is 64.
+ * uart_print_str() func increases this max lenght to about 190 symbols.
+ * 
+ * TODO: refactor this function
+ * Caution! The code in this function is very terrible and bad-readable, 
+ * and it works with no 100% warranty so if you want to use it, you can refactor it
+ */
+void uart_print_str(char *str)
+{
+	uint8_t lenght = 0;
+	char tmp = str[lenght];
+	while(tmp != '\0') {
+		tmp = str[lenght];
+		lenght++;
+	}
+
+	if(lenght < 64) {
+		uart_put(str);
+		return;
+	}
+	
+	char* str2 = NULL;
+	if(lenght > 63) {
+		str2 = malloc( (lenght - 63) *sizeof(*str2) );
+		if(NULL == str2) { 
+			uart_put("\ncan't allocate memory to print full message to you\n");
+			str[63] = '\0'; /* print not full message and break function */
+			uart_put(str);
+			return;
+		}
+		for(uint8_t i = 63; i < lenght; i++)
+			str2[i-63] = str[i];
+	}
+	str[63] = '\0';
+	uart_put(str); 
+	
+	lenght -= 63;
+	if(lenght > 63) {
+		for(uint8_t i = 0; i < 63; i++)
+			str[i] = str2[i];
+	}
+	else {
+		uart_put(str2);
+		free(str2);
+		return;
+	}
+	
+	lenght -= 63;
+	uart_put(str);
+	
+	if(lenght > 63) {
+		for(uint8_t i = 0; i < 63; i++)
+			str[i] = str2[i+63];
+	}
+	else {		
+		uart_put(str2);
+		free(str2);
+		return;
+	}
+	lenght -= 63;
+	uart_put(str);
+
+	
+	if(lenght > 63)
+		uart_put("\ttoo long string\n");
+	free(str2);
+	return;
+}
+
 
 extern void uart_print_uint8_dec(uint8_t arg);
 extern void uart_print_uint8_hex(uint8_t arg);
@@ -293,14 +390,3 @@ void uart_print_1wire_id_hex(uint8_t *id)
 	uart_print_str("  CRC = ");
 	uart_print_uint8_hex(id[7]);
 }
-
-
-
-
-
-
-
-
-
-
-

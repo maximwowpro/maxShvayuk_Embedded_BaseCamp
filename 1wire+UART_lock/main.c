@@ -16,37 +16,6 @@
 
 #define F_CPU   16000000UL
 
-/* USART RX Complete interrupt handler */
-ISR(USART_RX_vect, ISR_BLOCK)
-{	
-	/* Buffer will contain the last N = <buffer_len> chars read */
-	rdbuff[rdind] = UDR0;
-
-	if ('\n' == rdbuff[rdind]) {
-		rdbuff[rdind] = '\0';
-		rxcflag = true;
-		rdind = 0;
-	} else {
-		rxcflag = false;
-		rdind++;
-	}
-
-	if (rdind >= BUFFER_LEN)
-		rdind = 0;
-}
-
-/* uart_compare_with_rdbuff: compare @str with rdbuff(watch print_uart.h).
- * This is front-end to atomic_str_eq() function.
- * 
- * Return:
- * true  - str == rdbuff
- * false - str != rdbuff
- */
-bool uart_compare_with_rdbuff(char *str)
-{
-	return atomic_str_eq(rdbuff, str);
-}
-
 
 void soft_delay_us(uint16_t time)
 {
@@ -67,25 +36,12 @@ void line_release(void)
 	PORTB |= (1 << 0);
 }
 
+/* read the state of PB0, where 1-Wire data pin is situated */
 bool line_read(void)
 {
 	uint8_t val = PINB & 0x01;
 	return val;
 }
-
-// void put(uint8_t byte)
-// {
-// 	PORTB |= 1 << 3;
-// 	soft_delay_us(20);
-// 	PORTB &= ~(1 << 3);
-// 	for (int i=0; i<8; i++) {
-// 		if (byte & (1 << i))
-// 		rxcflag	PORTB |= 1 << 3;
-// 		else
-// 			PORTB &= ~(1 << 3);
-// 		soft_delay_us(20);
-// 	}
-// }
 
 
 int main(void)
@@ -106,8 +62,12 @@ int main(void)
 	set_sleep_mode(SLEEP_MODE_IDLE);
 	sleep_enable();
 	sei();
-	
-	uart_put("\n\nHello from avr lock\n\n");
+
+	uart_print_str("\n\nHello from avr lock\nYou can write such commands:\n");
+	uart_print_str("\t-open -- unlock the lock\n\t-close -- lock the lock\n");
+	uart_print_str("\t-watch all keys -- watch all keys, what are storaging at EEPROM\n");
+	uart_print_str("\t-add new key -- add new 1-Wire ID as a new key to EEPROM\n");
+	uart_print_str("\t-DELETE_ALL_KEYS_FROM_EEPROM -- delete ALL keys from EEPROM\n");
 	
 	ow_err err;
 
@@ -118,59 +78,52 @@ int main(void)
 	
 	
 	uart_put("\n\nparse EEPROM0:\n");
-	for(uint16_t i = 0; i < 24; i++) {
+	for(uint16_t i = 0; i < 50; i++) {
 		uart_print_uint8_hex(lock_eeprom_read_byte(i));
 		uart_put(" ");
 	}
 	
-	uart_put("\n\nclear EEPROM:\n");
-	for(uint16_t i = 0; i < 24; i++) {
-		lock_eeprom_write_byte(i, 0x00);
-	}
+// 	uart_put("\n\nclear EEPROM:\n");
+// 	for(uint16_t i = 0; i < 24; i++) {
+// 		lock_eeprom_write_byte(i, 0x00);
+// 	}
 	
 	
 	lock.num_keys = 0;
 	
-	uint8_t key_eeprom_test[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-	
-	lock_eeprom_write_key(&lock, key_eeprom_test);
-	
-	uart_put("\n\nparse EEPROM1:\n");
-	for(uint16_t i = 0; i < 24; i++) {
-		uart_print_uint8_hex(lock_eeprom_read_byte(i));
-		uart_put(" ");
-	}	
 	
 	while (1) {
 
-		while (rxcflag) {
-			if (uart_compare_with_rdbuff("open")) {
-				uart_put("\nopened OK\n");
-				lock.unlock_func(&led);
-				sleep_ms(2000);
-				lock.wait_func(&led);
-			} else if (uart_compare_with_rdbuff("close")) {
-				uart_put("\nclosed OK\n");
-				lock.lock_func(&led);
-				sleep_ms(1000);
-				lock.wait_func(&led);
-			} else if (uart_compare_with_rdbuff("watch all keys")) {
-				uart_put("\nYour keys are:\n");
-				for(uint8_t i = 0; i < lock.num_keys; i++) {
-					uart_print_str("\n");
-					uart_print_uint8_dec(i + 1);
-					uart_print_str(" key =   ");
-					for(uint16_t k = i * 8 + 1; k <= i * 8 + 1 + 7; k++) {
-					uart_print_uint8_hex(lock_eeprom_read_byte(k));
-					uart_put(" ");
-					}
-				}
-			} else if(rdbuff[0] != '\0') {
-				uart_put("Unknown command\n");
-				uart_put(rdbuff);
-			}
-			rxcflag = false;
-		}
+// 		while (rxcflag) {
+// 			if (uart_compare_with_rdbuff("open")) {
+// 				uart_put("\nopened OK\n");
+// 				lock.unlock_func(&led);
+// 				sleep_ms(2000);
+// 				lock.wait_func(&led);
+// 			} else if (uart_compare_with_rdbuff("close")) {
+// 				uart_put("\nclosed OK\n");
+// 				lock.lock_func(&led);
+// 				sleep_ms(1000);
+// 				lock.wait_func(&led);
+// 			} else if (uart_compare_with_rdbuff("watch all keys")) {
+// 				uart_put("\nYour keys are:\n");
+// 				for(uint8_t i = 0; i < lock.num_keys; i++) {
+// 					uart_print_str("\n");
+// 					uart_print_uint8_dec(i + 1);
+// 					uart_print_str(" key =   ");
+// 					for(uint16_t k = i * 8 + 1; k <= i * 8 + 1 + 7; k++) {
+// 					uart_print_uint8_hex(lock_eeprom_read_byte(k));
+// 					uart_put(" ");
+// 					}
+// 				}
+// 			} else if(rdbuff[0] != '\0') {
+// 				uart_put("Unknown command\n");
+// 				uart_put(rdbuff);
+// 			}
+// 			rxcflag = false;
+// 		}
+		
+		uart_lock_read(&lock, &led);
 		
 		lock_add_key_by_button(&lock, &led);
 		lock_try_unlock_LED(&lock, &led, ibutton_id_compare, 

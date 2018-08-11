@@ -9,9 +9,17 @@
 
 #include <stdbool.h>
 
-// static const uint8_t MAX_KEYS = 0xFF;
-
-
+/* struct __lock_st - struct of lock
+ * 
+ * data_pin - pin to work with 1-Wire protocol
+ * 
+ * lock_func   - what should happen if lock was opened by valid key
+ * wait_func   - what should happen if lock is waiting for key
+ * unlock_func - what should happen if lock wasn't opened because of invalid key
+ * 
+ * num_keys - number of current saved keys. This value situated in EEPROM 
+ * 	      memory, adress 0x00
+ */
 typedef struct __lock_st {
 	ow_Pin data_pin;
 	
@@ -26,10 +34,12 @@ typedef struct __lock_st {
 	uint8_t num_keys;
 } lock_st;
 
+
 void lock_init(lock_st *lock, void(*lock_func)(void*),
 	       void(*wait_func)(void*), void(*unlock_func)(void*),
 	       volatile uint8_t *DDR, volatile uint8_t *PORT, 
 	       volatile uint8_t *PIN);
+
 
 /* The following 3 functions determine what will happen in
  * lock(closed), wait and unlock(open) states.
@@ -90,6 +100,7 @@ void lock_try_unlock_LED(lock_st *lock, led_RGB *led, uint8_t *id_compare,
 /* sleep_ms: put MCU to sleep (IDLE mode) */
 void sleep_ms(uint16_t ms_val);
 
+
 /*
  * soft_delay: simple software delay. 
  * We need it for ISR(INT0_vect, ISR_BLOCK) in lock.c
@@ -103,6 +114,7 @@ inline void soft_delay(volatile uint16_t N)
 	}
 	return;
 }
+
 
 /* lock_interrupt_INT0_init: configuring INT0 interrupt */
 void lock_interrupt_INT0_init();
@@ -147,7 +159,8 @@ uint8_t lock_eeprom_read_byte(uint16_t adr_eeprom);
 uint8_t * lock_eeprom_read_key(lock_st *lock, uint8_t key_number, uint8_t *key);
 
 
-// /* uart_lock_read: allow lock read and execute commands given by UART */
-// //void uart_lock_read(lock_st *lock);
+/* uart_lock_read: allow lock read and execute commands given by UART */
+void uart_lock_read(lock_st *lock, led_RGB *led);
+
 
 #endif

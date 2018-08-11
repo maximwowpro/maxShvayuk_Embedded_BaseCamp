@@ -1,8 +1,13 @@
+/* 
+ * lib for work with UART protocol at ATMEGA 328p
+ */
+
 #ifndef PRINT_UART_H
 #define PRINT_UART_H
 
 #define F_CPU 16000000UL
 /* bytes in read and write buffers */
+/* !!! BUFFER_LEN is a max lenght of string, which is an argument of uart_put() */
 #define BUFFER_LEN (64)
 
 #include <avr/io.h>
@@ -18,12 +23,12 @@ static const uint32_t uart_baudrate = 19200;	/* Baud rate (Baud / second) */
 /* Value to be placed in UBRR register. See datasheet for more */
 static const uint16_t ubrr_val = (F_CPU / (16 * uart_baudrate)) - 1;
 /* Read and write buffers */
-static uint8_t	rdbuff[BUFFER_LEN] = {'\0'},
-		wrbuff[BUFFER_LEN] = {'\0'};
+extern uint8_t	rdbuff[];
+extern uint8_t	wrbuff[];
 static uint8_t rdind = 0, wrind = 0;	/* Indices */
 /* Indicates transfer & reception completion */
-static volatile bool txcflag = true;
-static volatile bool rxcflag = false;
+extern volatile bool txcflag;/* = true;*/
+extern volatile bool rxcflag;
 
 
 void uart_init(void);
@@ -41,6 +46,7 @@ bool atomic_str_eq(char *str1, char *str2);
  */
 bool uart_compare_with_rdbuff(char *str);
 
+
 /*
  * Next 3 functions converts separate number  to char* string (in dec or hex).
  */
@@ -55,10 +61,7 @@ char* to_string_uint16_dec(uint16_t arg, char* str);
  * Next 4 functions are convenient front-end to uart_put()
  * and previously to_string functions.
  */
-inline void uart_print_str(char *str) 
-{
-	uart_put(str);
-}
+void uart_print_str(char *str);
 
 inline void uart_print_uint8_dec(uint8_t arg)
 {

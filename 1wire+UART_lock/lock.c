@@ -31,13 +31,13 @@ void lock_init(lock_st *lock, void(*lock_func)(void*),
 	       volatile uint8_t *DDR, volatile uint8_t *PORT, 
 	       volatile uint8_t *PIN)
 {	
-	lock->lock_func = lock_func;
-	lock->wait_func = wait_func;
+	lock->lock_func   = lock_func;
+	lock->wait_func   = wait_func;
 	lock->unlock_func = unlock_func;
 	
-	lock->DDR = DDR;
+	lock->DDR  = DDR;
 	lock->PORT = PORT;
-	lock->PIN = PIN;
+	lock->PIN  = PIN;
 	
 	/*
 	 * Read the current number of keys from EEPROM. 
@@ -80,6 +80,7 @@ void lock_add_key_by_button(lock_st *lock, led_RGB *led)
 		uint8_t error_code = 0;
 		uint8_t new_key[8];
 		uint8_t crc;
+		/* read 1-Wire id+CRC using READ ROM (0x33) command */
 		error_code = ow_cmd_readrom
 			(&(lock->data_pin), new_key, &crc, true, false);
 			
@@ -96,8 +97,6 @@ void lock_add_key_by_button(lock_st *lock, led_RGB *led)
 		}
 	}
 }
-
-
 
 
 /* lock_search_key - search *key* in EEPROM memory 
@@ -128,7 +127,6 @@ bool lock_search_key(lock_st *lock, uint8_t *key)
 	
 	return false;
 }
-
 
 
 void lock_try_unlock_LED(lock_st *lock, led_RGB *led, uint8_t *id_compare, 
@@ -218,8 +216,7 @@ ISR(INT0_vect, ISR_BLOCK)
 			key_add_flag = true;
 			uart_print_str("\nPlease, add new key:\n");
 		}
-	}
-	
+	}	
 }
 
 
@@ -230,7 +227,7 @@ void lock_interrupt_INT0_init()
 	DDRD  &= ~(1 << 2);
 	PORTD &= ~(1 << 2);
 	
-	/* interrupt INT0 will be triggered by rising signal (GND -> VCC) */
+	/* interrupt INT0 will be triggered by rising signal (GND => VCC) */
 	EICRA &= ~(1 << ISC01);
 	EICRA |=  (1 << ISC00);
 	
@@ -269,6 +266,7 @@ void lock_eeprom_write_byte(uint16_t adr_eeprom, uint8_t data_eeprom)
 	}
 }
 
+
 /*
  * lock_eeprom_write_key: write a 1-Wire id(8 bytes) with value *new_key to EEPROM.
  */
@@ -304,6 +302,7 @@ uint8_t lock_eeprom_read_byte(uint16_t adr_eeprom)
 	return EEDR;
 }
 
+
 /*
  * lock_eeprom_read_key: read key with number key_number 
  * and copy its value to key.
@@ -334,28 +333,130 @@ uint8_t * lock_eeprom_read_key(lock_st *lock, uint8_t key_number, uint8_t *key)
 }
 
 
-// /* uart_lock_read: allow lock read and execute commands given by UART */
-// void uart_lock_read(lock_st *lock)
-// {
-// 	if( uart_compare_with_rdbuff("close\n") ) {
-// 		lock->lock_func;
-// 	} else if( uart_compare_with_rdbuff("open\n") ) {
-// 		lock->unlock_func;
-// 	} else if( uart_compare_with_rdbuff("wait") ) {
-// 		lock->wait_func;
-// 	}
-// 	else {
-// 		uart_print_str("Unknown command!");
-// 	}
-// }
+/* uart_lock_read: allow lock read and execute commands given by UART */
+void uart_lock_read(lock_st *lock, led_RGB *led)
+{
+	while (rxcflag) {
+		if (uart_compare_with_rdbuff("open")) {
+			uart_print_str("\nopen - OK\n");
+			lock->unlock_func(led);
+			sleep_ms(2000);
+			lock->wait_func(led);
+		} else if (uart_compare_with_rdbuff("close")) {
+			uart_print_str("\nclose - OK\n");
+			lock->lock_func(led);
+			sleep_ms(1000);
+			lock->wait_func(led);
+		} else if (uart_compare_with_rdbuff("watch all keys")) {
+			uart_print_str("\nYour keys are:\n");
+			for(uint8_t i = 0; i < lock->num_keys; i++) {
+				uart_print_str("\n");
+				uart_print_uint8_dec(i + 1);
+				uart_print_str(" key =   ");
+				for(uint16_t k = i * 8 + 1; k <= i * 8 + 1 + 7; k++) {
+					uart_print_uint8_hex(lock_eeprom_read_byte(k));
+					uart_print_str(" ");
+				}
+			}
+		} else if(uart_compare_with_rdbuff("add new key")) {
+			uart_print_str("\nWrite new key in next format:\n");
+			uart_print_str("1-byte familyID\t6-bytes uniqueID\t1-byte CRC\n");
+			uart_print_str("in hexadecimal notation, without spaces\n");
+			uart_print_str("for example: 01A2B3C4D5E6F70D \n");
 
-
-
-
-
-
-
-
+			parse_key: /* goto label */
+			rxcflag = false;
+			while (!rxcflag); /* wait for a new command from user: enter 1-Wire ID or "break" to exit */
+			
+			/* leave "add new key" mode and skip this iteration of main loop in function "while(rxcflag)" */
+			if(uart_compare_with_rdbuff("break")) {
+				rxcflag = false;
+				uart_print_str("\nwaiting for a new command...\n");
+				continue;
+			}
+			
+			/* Now parse an input (rdbuff) to check that input 1-Wire ID is correct */
+			/* if user wrote invalid format of key - try again using goto */
+			if(rdbuff[16] != '\0') {
+				uart_print_str("\nYou wrote 1-Wire ID with invalid lenght, try again please, ");
+				uart_print_str("or enter \"break\" to exit from add-key mode\n");
+				goto parse_key;
+			}
+			
+			/* parse numbers from string and write this values to  tmp_key[8] */
+			/* if user entered "F5" number(in hex) - num_str1 = 'F', num_str2 = '5' */
+			char num_str1, num_str2;
+			uint8_t tmp_key[8] = {0};
+			uint8_t tmp_key_counter = 0;
+			
+			for(uint8_t i = 0; i <= 14; i += 2) {
+				num_str1 = rdbuff[i];
+				num_str2 = rdbuff[i+1];
+				
+				/* check that all numbers and letters of 1-Wire id are correctly, using ASCII
+				 * (0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F) */
+				if(num_str1 < 48 || (num_str1 > 57 && num_str1 < 65) || num_str1 > 70) {
+					uart_put("\nYou wrote invalid number in key, try again please, ");
+					uart_put("or write \"break\" to exit from add-key mode\n");
+					goto parse_key;
+				}
+				if(num_str2 < 48 || (num_str2 > 57 && num_str2 < 65) || num_str2 > 70) {
+					uart_put("\nYou wrote invalid number in key, try again please, ");
+					uart_put("or write \"break\" to exit from add-key mode\n");
+					goto parse_key;
+				}
+				
+				/* convert numbers, entered by user from hex to dec system, using ASCII */
+				if(num_str1 < 64) /*if num_str1 == 0,1,2,3,4,5,6,7,8,9 */ 
+					tmp_key[tmp_key_counter] += 16 * (num_str1 - 48);
+				else	  /*if num_str1 == A,B,C,D,E,F	       */ 
+					tmp_key[tmp_key_counter] += 16 * (num_str1 - 55);
+				
+				if(num_str2 < 64) 
+					tmp_key[tmp_key_counter] += (num_str2 - 48);
+				else 
+					tmp_key[tmp_key_counter] += (num_str2 - 55);
+				
+				tmp_key_counter++;
+			}
+			
+			/* write 1-Wire ID from tmp_key[8] to EEPROM memory */
+			lock_eeprom_write_key(lock, tmp_key);
+			
+			uart_print_str("\nYour new key =  ");
+			uart_print_1wire_id_hex(tmp_key);
+		} else if(uart_compare_with_rdbuff("DELETE_ALL_KEYS_FROM_EEPROM")) {
+			uart_print_str("\nCAUTION!!! This action will delete ALL information about avaiable 1-Wire KEYS ");
+			uart_print_str("in EEPROM, do you really want to do this (enter \"YES\" or \"no\" )\n");
+			rxcflag = false;
+			while (!rxcflag); /* wait for a new command from user: "YES" or "no" */
+			
+			if( uart_compare_with_rdbuff("YES") ) {
+				rxcflag = false;
+				uart_print_str("\ndeleting all keys from EEPROM...\n");
+				for(uint16_t i = 0; i < 8 * lock->num_keys + 1; i++)
+					lock_eeprom_write_byte(i, 0x00);
+				lock->num_keys = 0;
+				uart_print_str("\nEEPROM was cleaned, waiting for a new command\n");
+				continue;
+			} else if( uart_compare_with_rdbuff("no") ) {
+				rxcflag = false;
+				uart_print_str("\nYou entered \"no\", so waiting for a new command...\n");
+				continue;
+			} else if(rdbuff[0] != '\0') {
+				rxcflag = false;
+				uart_print_str("\nYou entered \"");
+				uart_print_str(rdbuff);
+				uart_print_str("\"   I think this means \"no\", so waiting for a new command...\n");
+				continue;
+			}
+		} else if(rdbuff[0] != '\0') {
+			uart_print_str("\nUnknown command\n");
+			uart_print_str(rdbuff);
+		}
+		rxcflag = false;
+	}
+}
 
 
 

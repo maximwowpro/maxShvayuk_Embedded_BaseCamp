@@ -1,3 +1,7 @@
+/*
+ * lib for working with 1-Wire protocol
+ */
+
 #ifndef ONEWIRE_H
 #define ONEWIRE_H
 

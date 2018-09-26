@@ -15,6 +15,6 @@ Just run **make** in terminal in folder with source file __resize_image.c__ and 
 To run the program, usage:  
 __./`program_name <path_to_source_image> <path_to_output_image> <width_output_image> <height_output_image>`__
 
-Here you can see how time, which program spend on resize depends of image size.
+Here you can see how time, which program spend on resize depends of image size.  
 Depend is **linear**.
 ![](http://i.piccy.info/i9/40460aee820ec2a3e0f43dbc3df7856c/1537987869/37627/1271665/t_size_in_pixels_for_image_resize_function.png)  

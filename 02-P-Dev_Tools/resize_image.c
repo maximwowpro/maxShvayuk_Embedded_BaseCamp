@@ -25,7 +25,7 @@ double timespec_diff (struct timespec *stop, struct timespec *start)
 {
 	double diff = difftime (stop->tv_sec, start->tv_sec);
 	diff *= 1000;
-	diff += (stop->tv_nsec - start->tv_nsec) / 1e6;
+	diff += ( (stop->tv_nsec) - (start->tv_nsec) ) / 1e6;
 	return diff;
 }
 
@@ -47,15 +47,17 @@ int resize_image (char* src_image, char* result_image, unsigned long width, unsi
 	const FilterTypes filter = BoxFilter;
 	
 	/* Read input image */
-	if (MagickPass == status)		
+	if (MagickPass == status) {
 		status = MagickReadImage (magick_wand, src_image);
+	}
 	
 	/* Resizing image */
 	MagickResizeImage (magick_wand, width, height, filter, 1 );
 
 	/* Write output file */
-	if (status == MagickPass)		
+	if (MagickPass == status) {
 		status = MagickWriteImage (magick_wand, result_image);
+	}
 	
 	/* Errors handling */
 	if (MagickPass != status) {
@@ -69,8 +71,9 @@ int resize_image (char* src_image, char* result_image, unsigned long width, unsi
 	DestroyMagickWand (magick_wand);
 	DestroyMagick ();
 	
-	if (MagickPass != status)
+	if (MagickPass != status) {
 		exit (EXIT_FAILURE);
+	}
 	
 	return 0;
 }
@@ -82,21 +85,24 @@ int main (int argc, char *argv[])
 	unsigned long columns = 0;
 
 	/* Parse arguments */
-	if (argc < 5) 
+	if (argc < 5) {
 		goto exc_fewargs;
-	if (argc > 5) 
+	}
+	if (argc > 5) {
 		goto exc_argtoomuch;
+	}
 	
 	columns = atol (argv[3]);
 	rows = atol (argv[4]);
-	if (rows <= 0 || columns <= 0 ) 
-		goto exc_wrongsize;	
+	if (rows <= 0 || columns <= 0 ) {
+		goto exc_wrongsize;
+	}
 	
 	char* src_image    = strdup (argv[1]);
 	char* result_image = strdup (argv[2]);
-	if (NULL == src_image || NULL == result_image)
-		goto exc_malloc;	
-	
+	if (NULL == src_image || NULL == result_image) {
+		goto exc_malloc;
+	}
 
 	/* Resizing */
 	struct timespec time_now, time_after;
@@ -105,8 +111,9 @@ int main (int argc, char *argv[])
 
 	int status = 0;
 	status = resize_image (src_image, result_image, columns, rows);
-	if (0 != status)
+	if (0 != status) {
 		goto exc_resize;
+	}
 
 	clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &time_after);
 	

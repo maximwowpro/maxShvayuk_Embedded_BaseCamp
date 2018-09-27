@@ -1,6 +1,7 @@
 /*
  * Created by Max Shvayuk
  * 05.07.2018
+ * Some pieces of code, writed by https://github.com/thodnev were used.
  */
 
 #include <wand/magick_wand.h>
